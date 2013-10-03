@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.*?>
+<?import java.util.*?>
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.image.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.paint.*?>
+<?import javafx.scene.text.*?>
+
+<AnchorPane id="AnchorPane" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="600.0" prefWidth="900.0" xmlns:fx="http://javafx.com/fxml" fx:controller="com.imageverifier.gui.GUIController">
+  <children>
+    <BorderPane prefHeight="600.0" prefWidth="900.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+      <bottom>
+        <HBox minHeight="-Infinity" prefHeight="20.0" prefWidth="200.0">
+          <children>
+            <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Text" />
+          </children>
+          <padding>
+            <Insets bottom="4.0" left="4.0" right="4.0" top="4.0" />
+          </padding>
+        </HBox>
+      </bottom>
+      <center>
+        <TabPane prefHeight="600.0" prefWidth="900.0" tabClosingPolicy="UNAVAILABLE">
+          <tabs>
+            <Tab text="Duplicates Inspect">
+              <content>
+                <AnchorPane id="Content" minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
+                  <children>
+                    <SplitPane dividerPositions="0.49888641425389757" focusTraversable="true" prefHeight="553.0" prefWidth="900.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+                      <items>
+                        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="160.0" prefWidth="100.0" />
+                        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="160.0" prefWidth="100.0">
+                          <children>
+                            <SplitPane dividerPositions="0.5027522935779817" focusTraversable="true" orientation="VERTICAL" prefHeight="437.0" prefWidth="329.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+                              <items>
+                                <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="281.0" prefWidth="409.0">
+                                  <children>
+                                    <TableView fx:id="tree" prefHeight="281.0" prefWidth="482.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+                                      <columns>
+                                        <TableColumn prefWidth="75.0" text="MD5" fx:id="col_md5" />
+                                        <TableColumn prefWidth="75.0" text="IMAGE 1" fx:id="col_image1" />
+                                        <TableColumn prefWidth="75.0" text="IMAGE 2" fx:id="col_image2" />
+                                      </columns>
+                                    </TableView>
+                                  </children>
+                                </AnchorPane>
+                                <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="100.0" prefWidth="160.0">
+                                  <children>
+                                    <ScrollPane fx:id="scroll" hbarPolicy="ALWAYS" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="30.0" prefWidth="100.0" style="-fx-background-color:transparent;" vbarPolicy="NEVER" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+                                      <content>
+                                        <AnchorPane id="Content" fx:id="scroll_content" minHeight="0.0" minWidth="0.0" prefHeight="263.9998779296875" prefWidth="407.9998779296875">
+                                          <children>
+                                            <HBox fx:id="all_thumbs_container" prefHeight="264.0" prefWidth="408.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+                                              <children>
+                                                <VBox fx:id="single_thumb" prefHeight="264.0" prefWidth="223.0" spacing="10.0">
+                                                  <children>
+                                                    <ImageView id="image1" fx:id="thumb_image" fitHeight="174.74996948242188" fitWidth="232.99996799194165" pickOnBounds="true" preserveRatio="true" />
+                                                    <Label id="thumb_lavel" fx:id="thumb_label" labelFor="$thumb_image" wrapText="true">
+                                                      <VBox.margin>
+                                                        <Insets />
+                                                      </VBox.margin>
+                                                    </Label>
+                                                  </children>
+                                                </VBox>
+                                              </children>
+                                            </HBox>
+                                          </children>
+                                        </AnchorPane>
+                                      </content>
+                                    </ScrollPane>
+                                  </children>
+                                </AnchorPane>
+                              </items>
+                            </SplitPane>
+                          </children>
+                        </AnchorPane>
+                      </items>
+                    </SplitPane>
+                  </children>
+                </AnchorPane>
+              </content>
+            </Tab>
+            <Tab text="Difference Inspect">
+              <content>
+                <AnchorPane id="Content" minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0" />
+              </content>
+            </Tab>
+          </tabs>
+        </TabPane>
+      </center>
+    </BorderPane>
+  </children>
+</AnchorPane>
