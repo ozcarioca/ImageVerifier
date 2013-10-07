@@ -3,28 +3,25 @@ package com.imageverifier.gui;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.net.URL;
-
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Observer;
 import java.util.ResourceBundle;
 
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
+import javafx.collections.ListChangeListener;
+import javafx.collections.ListChangeListener.Change;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.scene.Group;
-import javafx.scene.Node;
-import javafx.scene.Parent;
-import javafx.scene.control.Button;
-import javafx.scene.control.Control;
-import javafx.scene.control.Label;
-import javafx.scene.control.ScrollPane;
+import javafx.scene.control.ListCell;
+import javafx.scene.control.ListView;
+import javafx.scene.control.ProgressBar;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
@@ -36,8 +33,6 @@ import javafx.scene.control.cell.TextFieldTableCell;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
-import javafx.scene.layout.AnchorPane;
-import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
 import javafx.util.Callback;
@@ -54,21 +49,19 @@ public class GUIController {
     @FXML 
     private ResourceBundle resources;
     
+	@FXML 
+    private ProgressBar progress;
+	
     @SuppressWarnings("unused")
 	@FXML 
     private URL location;
   //  @FXML 
    // private ImageView thumb_image;
     
-    @FXML 
-    private HBox all_thumbs_container; 
-    
     
 	@FXML 
     private TableView tree;
 	
-	@FXML 
-    private ScrollPane scroll;
 	
 //	@FXML 
  //   private Button find;
@@ -76,7 +69,12 @@ public class GUIController {
 //    private Button scan;
 	
 	@FXML 
-    private TextArea log;
+	 private ListView<String> console;
+
+	@FXML 
+	 private ListView<String> dupFolders;
+	@FXML 
+	 private ListView<String> selectedFolders;
 	
 	@FXML 
     private TextField drive;
@@ -91,17 +89,41 @@ public class GUIController {
     @FXML
     TableColumn<Map, String> col_image2;
     
+    ObservableList<String> data = FXCollections.observableArrayList(
+            "./test/folder1/IMGP0039.JPG","./test/folder1/IMGP0040.JPG","./test/folder1/IMGP0049.JPG");
+
     
-    Group thumbnails = new Group();
+	@FXML
+	private ListView<String> thumbnails;
+    
+    //Group thumbnails = new Group();
     DB db = new DB();
-    Map<String, Image> imageCache = new HashMap<String, Image>();
     
 	 @SuppressWarnings( "unchecked" )
 	@FXML // This method is called by the FXMLLoader when initialization is complete
 	    void initialize() {
 		 
-		// all_thumbs_container.get
-		 scroll.setContent(all_thumbs_container);
+		 dupFolders.getItems().addAll(data);
+		 ObservableList<String> empty = FXCollections.observableArrayList();
+		 selectedFolders.setItems(empty);
+		 initializeThumbnails();
+		 
+		 
+	       console.getItems().addListener(new ListChangeListener<String>() {
+
+	            @Override public void onChanged(Change<? extends String> change) {
+
+	                while (change.next()) {
+
+	                    if (change.getList().size() > 20) change.getList().remove(0);
+
+	                }
+
+	            }
+
+	        });
+		 
+		 
 		 col_md5.setCellValueFactory(new MapValueFactory("MD5"));
 		 col_image1.setCellValueFactory(new MapValueFactory("IMAGE1"));
 		 col_image2.setCellValueFactory(new MapValueFactory("IMAGE2"));
@@ -164,7 +186,7 @@ public class GUIController {
 	        ObservableList<Map> allData = FXCollections.observableArrayList();
 	        Map<String,List<Entry>> duplicates;
 	        try{
-	        	duplicates = db.getDuplicates(drive); 
+	        	duplicates = db.getDuplicates(drive, false); 
 	        }catch(Exception e )
 	        {
 	        	return allData;
@@ -174,6 +196,14 @@ public class GUIController {
 	        loadTask.setDuplicates(duplicates);
 	        new Thread(loadTask).start();
 			
+	       
+
+	        LoadPathsTask loadPathTask = new LoadPathsTask();
+	        loadPathTask.setDuplicates(duplicates);
+	        new Thread(loadPathTask).start();
+	        
+	        dupFolders.itemsProperty().bind(loadPathTask.valueProperty());
+	        
 	        
 	        for (java.util.Map.Entry<String,List<Entry>> entry : duplicates.entrySet()) {
 	        	System.out.println(entry.getKey() + " - " + entry.getValue());
@@ -226,31 +256,39 @@ public class GUIController {
 	    
 	    public void scanDirectory(ActionEvent event)
 	    {
-	    	try{
-	    		FileWalker.walk("C",scan_directory.getText(), db,
-	    				new Callback<Entry, Void>() {
-	    				    			@Override
-						    			public Void call(Entry e) {
-						    				System.out.println(e.getPath());
-						    				try{
-						    					db.insert(e);
-						    				}catch(Exception ex)
-						    				{
-						    					ex.printStackTrace();
-						    				}
-						    				log.setText(log.getText() + "\n" + e.getPath());
-						            		return null;
-						    			}
-						    		}		
-	    		);
-	    	}catch(Exception e)
+	    	
+	        ScanFolder scan = new ScanFolder();
+	      //  progress.progressProperty().bind(scan.progressProperty());
+	        new Thread(scan).start();
+	    }
+	    
+	    
+	    public void mark(ActionEvent event)
+	    {
+	    	
+	    	System.out.println("Clicked");
+	    	List <String> selected = selectedFolders.getItems();
+	    	for(String item : selected)
 	    	{
-	    		StringWriter sw = new StringWriter();
-	    		PrintWriter pw = new PrintWriter(sw);
-	    		e.printStackTrace(pw);
+	    		try{
+	    			System.out.println("Marking " + item);
+	    			db.mark(item);	
+	    		}catch (Exception e)
+	    		{
+	    			e.printStackTrace();
+	    		}
 	    		
-	    		log.setText(sw.toString());
+	    		
 	    	}
+	    	
+	    }
+	    
+	    public void verify(ActionEvent event)
+	    {
+	    }
+	    
+	    public void copy(ActionEvent event)
+	    {
 	    }
 	    
 	    public void findDuplicates(ActionEvent event)
@@ -259,6 +297,101 @@ public class GUIController {
 	    	tree.setItems(generateDataInMap2(drive.getText()));
 	    }
 	    
+	    public void selectFolders(ActionEvent event)
+	    {
+	    	
+	           ObservableList<String> selected = 
+	                FXCollections.observableArrayList( //copy
+	                		dupFolders.getSelectionModel().getSelectedItems());
+	            if (selected != null) {
+	            	selectedFolders.getItems().addAll(selected);
+	            	dupFolders.getItems().removeAll(selected);
+	            	dupFolders.getSelectionModel().clearSelection();
+	            }
+	    	
+	    	
+	     }
+	    public void removeFolderSelection(ActionEvent event)
+	    {
+	           ObservableList<String> selected = 
+	                FXCollections.observableArrayList( //copy
+	                		selectedFolders.getSelectionModel().getSelectedItems());
+	            if (selected != null) {
+	            	dupFolders.getItems().addAll(selected);
+	            	selectedFolders.getItems().removeAll(selected);
+	            	selectedFolders.getSelectionModel().clearSelection();
+	            }
+	    }
+	    
+	    static final Map<String,Image> imagesCache = new HashMap<String,Image>();
+		 
+	    class ScanFolder extends Task<Void>
+	    {
+	    	@Override
+	    	protected Void call() throws Exception {
+		    	try{
+		    		FileWalker.walk("C",scan_directory.getText(), db,
+		    				new Callback<Entry, Void>() {
+		    				    			@Override
+							    			public Void call(final Entry e) {
+							    				System.out.println(e.getPath());
+							    				try{
+							    					db.insert(e);
+							    				}catch(Exception ex)
+							    				{
+							    					ex.printStackTrace();
+							    				}
+							    				Platform.runLater(new Runnable() {
+													
+													@Override
+													public void run() {
+														// TODO Auto-generated method stub
+														console.getItems().add( "Scaning: " + e.getPath() + e.getFilename());
+									    						
+													}
+												}
+							    				);
+							            		return null;
+							    			}
+							    		}		
+		    		);
+		    	}catch(Exception e)
+		    	{
+		    		StringWriter sw = new StringWriter();
+		    		PrintWriter pw = new PrintWriter(sw);
+		    		e.printStackTrace(pw);
+		    		console.getItems().add( sw.toString());
+		    		
+		    	}
+		    	return null;
+	    	}
+	    }
+
+        class LoadPathsTask extends Task<ObservableList<String>> {
+       	 	Map<String,List<Entry>> duplicates;
+       	
+       	 	public void setDuplicates(Map<String, List<Entry>> duplicates) {
+				this.duplicates = duplicates;
+			}
+       	 
+	       	@Override
+	       	protected ObservableList<String> call() throws Exception {
+	       	    // List<Entry> images = (List<Entry>)row.get("IMAGES");
+	       		 ObservableList<String> returnList = FXCollections.observableArrayList();
+	    		 for(List<Entry> list: duplicates.values()){
+	    			 for(Entry entry: list)
+	    			 {
+	    				 if (!returnList.contains(entry.getPath()))
+	    				 {
+	    					 returnList.add(entry.getPath());
+	    				 }
+	    			 }
+	    		 }
+	       		
+	       		
+	       		return returnList;
+	       	}
+		};
 	    
         class LoadImagesCacheTask extends Task<Void> {
        	 	Map<String,List<Entry>> duplicates;
@@ -269,11 +402,12 @@ public class GUIController {
        	 
 	       	@Override
 	       	protected Void call() throws Exception {
-	       		imageCache.put("", null);
-	       	     List<Entry> images = (List<Entry>)row.get("IMAGES");
-	    		 List<Group> thumbsCache = new ArrayList<Group>();
-	    		 for(Entry item: images){
-	    			 thumbsCache.add(createThumbNail(item));
+	       	    // List<Entry> images = (List<Entry>)row.get("IMAGES");
+	    		 for(List<Entry> list: duplicates.values()){
+	    			 for(Entry entry: list)
+	    			 {
+	    				 imagesCache.put(entry.getPath() + entry.getFilename(),createImage(entry.getPath() + entry.getFilename()));
+	    			 }
 	    		 }
 	       		
 	       		
@@ -293,22 +427,66 @@ public class GUIController {
 			@Override
 	    	public void run() {
 	    		System.out.println("running run later");
-	    		 clearChildren(all_thumbs_container);
-	    		 List<Entry> images = (List<Entry>)row.get("IMAGES");
+	    		data.clear();
+	    		List<Entry> images = (List<Entry>)row.get("IMAGES");
 	    		 if (row.get("THUMBS") == null)
 	    		 {
-		    		 List<Group> thumbsCache = new ArrayList<Group>();
+		    		 //List<Group> thumbsCache = new ArrayList<Group>();
 		    		 for(Entry item: images){
-		    			 thumbsCache.add(createThumbNail(item));
+		    			// thumbsCache.add(createThumbNail(item));
+		    			 data.add( item.getPath() + item.getFilename());
 		    		 }
-		    		 row.put("THUMBS", thumbsCache);
+		    		// row.put("THUMBS", thumbsCache);
 	    		 }
 	    		 
-	    		 all_thumbs_container.getChildren().addAll(( List<Group>)row.get("THUMBS"));
+	    		 
 	    		
 	    		
 	    	}
 	    }
 
+								 
+	  
+	    private void initializeThumbnails()
+	    {
+	    	thumbnails.setItems(data);
+			 
+	    	thumbnails.setCellFactory(new Callback<ListView<String>, 
+		            ListCell<String>>() {
+		                @Override 
+		                public ListCell<String> call(ListView<String> list) {
+		                    return new ThumbnailCell();
+		                }
+		            }
+		        );	 
+	    }
 	    
+	    
+		 static class ThumbnailCell extends ListCell<String> {
+		        @Override
+		        public void updateItem(String item, boolean empty) {
+		            super.updateItem(item, empty);
+		           
+		            if (item != null) {
+		            	Image img = imagesCache.get(item);
+		            	if(img == null)
+		            	{
+		            		img = createImage(item);
+		            	}
+		            	ImageView image = new ImageView();
+		    	    	image.setImage(img);
+						image.setFitWidth(img.getWidth());
+		    	    	image.setPreserveRatio(true);
+		    	    	image.setSmooth(true);
+		    	    	image.setCache(true);
+		                setGraphic(image);
+		                setTooltip(new Tooltip(item));
+		            }
+		        }
+		    }
+		 
+		 public static Image createImage(String name)
+		 {
+			 return new Image("file:/"+ name,200,0,true,false);
+		 }
 }

@@ -3,6 +3,7 @@ package com.imageverifier;
 import java.io.File;
 import java.io.FileInputStream;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 
 
@@ -12,6 +13,9 @@ public class Entry
 	private String filename;
 	private String md5;
 	private String drive;
+	private long size;
+	private boolean duplicate;
+	
 	public Entry(String line) {
 		String[] split = line.split(",");
 		path = split[0];
@@ -25,10 +29,11 @@ public class Entry
 		this.path = FilenameUtils.separatorsToUnix(FilenameUtils.getPath(file.getPath()));
 		this.filename = file.getName().toLowerCase();
 		this.drive = drive;
+		this.size = FileUtils.sizeOf(file);
 		//System.out.println(FilenameUtils.separatorsToUnix(f.getAbsolutePath()));
 	}	
 	
-	public Entry(String drive, String filename, String path, String md5) throws Exception{
+	public Entry(String drive, String filename, String path, String md5, long size, boolean dup) throws Exception{
 		this.md5 = md5;
 		this.path = path;
 		this.filename = filename;
@@ -81,6 +86,19 @@ public class Entry
 		this.drive = drive;
 	}
 	
+	public boolean isDuplicate() {
+		return duplicate;
+	}
+	public void setDuplicate(boolean duplicate) {
+		this.duplicate = duplicate;
+	}
 	
+	public long getSize() {
+		return size;
+	}
+	
+	public void setSize(long size) {
+		this.size = size;
+	}
 	
 }

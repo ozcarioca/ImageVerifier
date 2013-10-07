@@ -8,6 +8,7 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -52,7 +53,7 @@ public class DB {
 	
 	public void insert (Entry entry) throws Exception
 	{
-		String sql = "insert into file (drive, path, filename, md5) VALUES ('"+entry.getDrive()+"', '"+entry.getPath()+"','"+entry.getFilename()+"','"+entry.getMd5()+"')";
+		String sql = "insert into file (drive, path, filename, md5, size, dup) VALUES ('"+entry.getDrive()+"', '"+entry.getPath()+"','"+entry.getFilename()+"','"+entry.getMd5()+"','"+entry.getSize()+"','"+entry.isDuplicate()+ "')";
 		System.out.println(sql);
 		Statement stmt = connection.createStatement();
 		stmt.execute(sql);
@@ -65,25 +66,33 @@ public class DB {
 		Statement stmt = connection.createStatement();
 		stmt.execute(sql);
 		stmt.close();
-	}	
+	}
 	
-	public Map<String,List<Entry>> getDuplicates(String drive) throws Exception
+	public void mark (String folder) throws Exception
 	{
-		String sql = "select path, filename, drive, md5 from file where drive = '"+drive+"' and  md5 in ( " +
-						" select md5 from file group by md5 having count(*) >= 2 "+
-						")";
+		String sql = "update file set dup = true where path = '" + folder + "'";
+		Statement stmt = connection.createStatement();
+		stmt.execute(sql);
+		stmt.close();
+	}
+	
+	public Map<String,List<Entry>> getDuplicates(String drive, boolean dup) throws Exception
+	{
+		String sql = "select path, filename, drive, md5, size, dup from file where drive = '"+drive+"' and dup = " + dup + "  and  md5 in ( " +
+						" select md5   from file where drive = '"+drive+"' and dup = " + dup + " group by md5 having count(*) >= 2 "+
+						") order by path";
 		return group(implGetData(sql));
 	}
 	
 	public List<Entry> getAll() throws Exception
 	{
-		String sql = "select path, filename, drive, md5 from file ";
+		String sql = "select path, filename, drive, md5, size, dup from file ";
 		return implGetData(sql);
 	}
 	
 	private Map<String,List<Entry>> group(List<Entry> entries)
 	{
-		Map<String,List<Entry>> map = new HashMap<String,List<Entry>> ();
+		Map<String,List<Entry>> map = new LinkedHashMap<String,List<Entry>> ();
 		for(Entry entry: entries)
 		{
 			List<Entry> temp = map.get(entry.getMd5());
@@ -104,7 +113,7 @@ public class DB {
 		List<Entry> returnList = new ArrayList<Entry>();
 		while (rs.next())
 		{
-			Entry entry = new Entry(rs.getString("drive"),rs.getString("filename"), rs.getString("path"),rs.getString("md5"));
+			Entry entry = new Entry(rs.getString("drive"),rs.getString("filename"), rs.getString("path"),rs.getString("md5"),rs.getLong("size"),rs.getBoolean("dup"));
 			returnList.add(entry);
 		}
 		rs.close();
